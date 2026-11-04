@@ -8,11 +8,12 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+denokv_proto.workspace = true
+
 anyhow.workspace = true
 async-trait.workspace = true
 aws-sdk-s3.workspace = true
 chrono.workspace = true
-denokv_proto.workspace = true
 futures.workspace = true
 hex.workspace = true
 prost.workspace = true

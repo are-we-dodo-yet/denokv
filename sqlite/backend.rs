@@ -23,7 +23,7 @@ use denokv_proto::Versionstamp;
 use denokv_proto::VALUE_ENCODING_V8;
 use num_bigint::BigInt;
 use rand::Rng;
-use rand::RngCore;
+use rand::RngExt;
 use rusqlite::params;
 use rusqlite::OptionalExtension;
 use rusqlite::Transaction;
@@ -154,7 +154,7 @@ pub enum SqliteBackendError {
 
 pub struct SqliteBackend {
   conn: rusqlite::Connection,
-  rng: Box<dyn RngCore + Send>,
+  rng: Box<dyn Rng + Send>,
   pub notifier: SqliteNotifier,
   pub messages_running: HashSet<QueueMessageId>,
   pub readonly: bool,
@@ -165,7 +165,7 @@ impl SqliteBackend {
   where
     F: FnMut(
       &mut rusqlite::Transaction,
-      &mut dyn RngCore,
+      &mut dyn Rng,
     ) -> Result<R, SqliteBackendError>,
   {
     sqlite_retry_loop(move || {
@@ -181,7 +181,7 @@ impl SqliteBackend {
   pub fn new(
     conn: rusqlite::Connection,
     notifier: SqliteNotifier,
-    rng: Box<dyn RngCore + Send>,
+    rng: Box<dyn Rng + Send>,
     force_readonly: bool,
   ) -> Result<Self, SqliteBackendError> {
     let readonly = force_readonly || conn.is_readonly("main")?;
@@ -340,7 +340,7 @@ impl SqliteBackend {
 
   fn atomic_write_once(
     tx: &mut rusqlite::Transaction,
-    rng: &mut dyn RngCore,
+    rng: &mut dyn Rng,
     write: &AtomicWrite,
   ) -> Result<(bool, AtomicWriteOutcome), SqliteBackendError> {
     let mut failed_checks = Vec::new();
@@ -358,7 +358,7 @@ impl SqliteBackend {
       return Ok((false, AtomicWriteOutcome::CheckFailed { failed_checks }));
     }
 
-    let incrementer_count = rng.gen_range(1..10);
+    let incrementer_count = rng.random_range(1..10);
     let version: i64 = tx
       .prepare_cached(STATEMENT_INC_AND_GET_DATA_VERSION)?
       .query_row([incrementer_count], |row| row.get(0))?;
@@ -682,7 +682,7 @@ impl SqliteBackend {
 }
 
 fn requeue_message(
-  rng: &mut dyn RngCore,
+  rng: &mut dyn Rng,
   tx: &mut Transaction,
   id: &str,
   now: DateTime<Utc>,
@@ -734,7 +734,7 @@ fn requeue_message(
       serde_json::from_str::<Vec<Vec<u8>>>(&keys_if_undelivered)
         .map_err(JsErrorBox::from_err)?;
 
-    let incrementer_count = rng.gen_range(1..10);
+    let incrementer_count = rng.random_range(1..10);
     let version: i64 = tx
       .prepare_cached(STATEMENT_INC_AND_GET_DATA_VERSION)?
       .query_row([incrementer_count], |row| row.get(0))?;
@@ -775,7 +775,7 @@ pub fn sqlite_retry_loop<R>(
       {
         log::debug!("kv: Database is busy, retrying");
         std::thread::sleep(Duration::from_millis(
-          rand::thread_rng().gen_range(5..20),
+          rand::rng().random_range(5..20),
         ));
         continue;
       }

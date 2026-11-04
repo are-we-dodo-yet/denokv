@@ -41,7 +41,7 @@ use futures::future::Either;
 use futures::FutureExt;
 use futures::Stream;
 use futures::StreamExt;
-use rand::RngCore;
+use rand::Rng;
 pub use rusqlite::Connection;
 use time::utc_now;
 use tokio::select;
@@ -220,7 +220,7 @@ pub enum SqliteCreateError {
 impl Sqlite {
   pub fn new(
     mut conn_gen: impl FnMut() -> Result<
-      (rusqlite::Connection, Box<dyn RngCore + Send>),
+      (rusqlite::Connection, Box<dyn Rng + Send>),
       JsErrorBox,
     >,
     notifier: SqliteNotifier,

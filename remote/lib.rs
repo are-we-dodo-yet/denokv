@@ -41,7 +41,7 @@ use log::debug;
 use log::error;
 use log::warn;
 use prost::Message;
-use rand::Rng;
+use rand::RngExt;
 use serde::Deserialize;
 use thiserror::Error;
 use time::utc_now;
@@ -457,7 +457,7 @@ fn randomized_exponential_backoff_duration(
 ) -> Duration {
   let attempt = attempt.min(12);
   let delay = base.as_millis() as u64 + (2 << attempt);
-  let delay = delay + rand::thread_rng().gen_range(0..(delay / 2) + 1);
+  let delay = delay + rand::rng().random_range(0..(delay / 2) + 1);
   std::time::Duration::from_millis(delay)
 }
 

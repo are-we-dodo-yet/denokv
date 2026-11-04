@@ -61,8 +61,7 @@ use futures::TryStreamExt;
 use log::info;
 use prost::DecodeError;
 use prost::Message;
-use rand::Rng;
-use rand::SeedableRng;
+use rand::RngExt;
 use rusqlite::OpenFlags;
 use std::env;
 use thiserror::Error;
@@ -336,7 +335,7 @@ async fn run_sync(
 
     let sleep_duration = std::time::Duration::from_millis(
       SYNC_INTERVAL_BASE_MS
-        + rand::thread_rng().gen_range(0..SYNC_INTERVAL_JITTER_MS),
+        + rand::rng().random_range(0..SYNC_INTERVAL_JITTER_MS),
     );
     tokio::time::sleep(sleep_duration).await;
   }
@@ -360,7 +359,7 @@ fn open_sqlite(
       Ok((
         Connection::open_with_flags(path, flags)
           .map_err(|e| deno_error::JsErrorBox::generic(e.to_string()))?,
-        Box::new(rand::rngs::StdRng::from_entropy()),
+        Box::new(rand::make_rng::<rand::rngs::StdRng>()),
       ))
     },
     notifier,
